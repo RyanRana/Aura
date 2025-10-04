@@ -1,4 +1,30 @@
 import snowflake.connector
+from dotenv import load_dotenv 
+import os 
+
+load_dotenv()
+#gets the data from the env
+try:
+    conn = snowflake.connector.connect(
+            user=os.getenv("SNOWFLAKE_USER"),
+            password=os.getenv("SNOWFLAKE_PASSWORD"),
+            account=os.getenv("SNOWFLAKE_ACCOUNT"),
+            warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
+            database=os.getenv("SNOWFLAKE_DATABASE"),
+            schema=os.getenv("SNOWFLAKE_SCHEMA")
+        )
+    print("Connection to Snowflake successful!")
+    
+    # You can now use the 'conn' object to run queries
+    # For example:
+    # cur = conn.cursor()
+    # cur.execute("SELECT CURRENT_VERSION()")
+    # one_row = cur.fetchone()
+    # print(one_row[0])
+
+except Exception as e:
+    print(f"Error connecting to Snowflake: {e}")
+
 
 # Replace with your actual credentials
 conn = snowflake.connector.connect(
