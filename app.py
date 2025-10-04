@@ -62,7 +62,7 @@ def generate_sql_query(user_question: str, db_schema: str, chat_history: list):
     # ... (code is unchanged from previous version)
     load_dotenv()
     genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-    model = genai.GenerativeModel('gemini-pro')
+    model = genai.GenerativeModel('gemini-2.5-flash-lite')
     formatted_history = format_chat_history(chat_history)
 
     prompt = f"""
@@ -82,6 +82,7 @@ def generate_sql_query(user_question: str, db_schema: str, chat_history: list):
     **User Question:**
     "{user_question}"
 
+    Return ONLY the raw SQL query, without any markdown, explanation, or leading characters.
     **SQL Query:**
     """
     try:
@@ -89,7 +90,13 @@ def generate_sql_query(user_question: str, db_schema: str, chat_history: list):
         sql_query = response.text.strip()
         if sql_query.lower().startswith("```sql"):
             sql_query = sql_query[5:-3].strip()
-        return sql_query
+
+        # If the query starts with a lowercase 'l', remove it.
+        if sql_query.startswith('l'):
+            sql_query = sql_query[1:]
+
+        # Also strip any leading whitespace that might be left.
+        return sql_query.lstrip()
     except Exception as e:
         print(f"Error generating SQL query: {e}")
         return None
@@ -117,12 +124,13 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
     A manager has asked: "{user_question}"
     
     Based on the database schema, create a step-by-step plan to investigate this.
-    For each step, state the specific question you need to answer.
-    
+    The plan should be a simple numbered list. Each item must be a single, clear question to be answered by querying the database.
+    Do NOT include any markdown, rationale, or other descriptive text.
+
     Example Plan:
-    1. Check the sales figures for the specified product and time frame.
-    2. Analyze the inventory levels to check for stockouts.
-    3. Examine the spoilage data to see if waste was a factor.
+    1. What were the total sales for the specified product and time frame?
+    2. What were the inventory levels for that product during that time?
+    3. What was the total spoilage quantity for that product?
     
     Your plan should be concise and logical.
 
@@ -135,7 +143,7 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
     """
     
     genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    model = genai.GenerativeModel('gemini-2.5-flash-lite')
     plan_response = model.generate_content(plan_prompt)
     analysis_plan = plan_response.text
     print(f"Analysis Plan:\n{analysis_plan}")
@@ -144,7 +152,14 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
     print("\n[Aria's Brain] Step 2: Executing plan and gathering data...")
     
     observations = ""
-    sub_questions = [line.split('. ')[1] for line in analysis_plan.strip().split('\n') if '. ' in line]
+    # More robust parsing for the analysis plan
+    sub_questions = []
+    for line in analysis_plan.strip().split('\n'):
+        line = line.strip()
+        # Find the first dot and split, ensuring the part before is a number
+        parts = line.split('.', 1)
+        if len(parts) == 2 and parts[0].isdigit():
+            sub_questions.append(parts[1].strip())
     
     for i, sub_q in enumerate(sub_questions, 1):
         # The agent uses its tool to get data for each step of the plan.
