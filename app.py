@@ -1,78 +1,210 @@
-import streamlit as st
-import time
+import os
+import google.generativeai as genai
+import snowflake.connector
+from dotenv import load_dotenv
+from database_connector import get_schema_for_agent
 
-# --- Page Configuration ---
-# The st.set_page_config() command must be the first Streamlit command in your script.
-st.set_page_config(
-    page_title="Aria: Retail Intelligence Agent",
-    page_icon="🤖",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+# --- Reusable Tools for the Agent ---
 
-# --- Mock Agent Function ---
-# This function simulates the behavior of your actual LangChain agent.
-# It includes a "thinking" spinner and streams the response word by word.
-def mock_agent_response(prompt):
+def execute_snowflake_query(sql_query: str):
+    """A tool to execute a SQL query on Snowflake and return results."""
+    # ... (code is unchanged from previous version)
+    load_dotenv()
+    conn = None
+    try:
+        conn = snowflake.connector.connect(
+            user=os.getenv("SNOWFLAKE_USER"),
+            password=os.getenv("SNOWFLAKE_PASSWORD"),
+            account=os.getenv("SNOWFLAKE_ACCOUNT"),
+            warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
+            database=os.getenv("SNOWFLAKE_DATABASE"),
+            schema=os.getenv("SNOWFLAKE_SCHEMA")
+        )
+        cur = conn.cursor()
+        cur.execute(sql_query)
+        columns = [desc[0] for desc in cur.description]
+        results = cur.fetchall()
+        
+        # Format results for easy use by the agent
+        if not results:
+            return "Query returned no results."
+        
+        formatted_results = " | ".join(columns) + "\n"
+        for row in results:
+            formatted_results += " | ".join(map(str, row)) + "\n"
+        return formatted_results
+
+    except Exception as e:
+        print(f"Error executing query: {e}")
+        return f"Error: Could not execute query. {e}"
+    finally:
+        if conn:
+            conn.close()
+
+def text_to_sql_tool(question: str, db_schema: str, chat_history: list):
+    """A tool that takes a natural language question and returns structured data from the database."""
+    print(f"\n[Tool Activated: Text-to-SQL] Answering sub-question: '{question}'")
+    
+    # Step 1: Generate SQL from the sub-question
+    sql_query = generate_sql_query(question, db_schema, chat_history)
+    if not sql_query:
+        return "Error: Could not generate a valid SQL query."
+    print(f"Generated SQL:\n{sql_query}\n")
+
+    # Step 2: Execute the query
+    results = execute_snowflake_query(sql_query)
+    return results
+
+# --- Core Gemini Functions (Prompts) ---
+
+def generate_sql_query(user_question: str, db_schema: str, chat_history: list):
+    """Uses Gemini to generate a SQL query from a user question."""
+    # ... (code is unchanged from previous version)
+    load_dotenv()
+    genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+    model = genai.GenerativeModel('gemini-pro')
+    formatted_history = format_chat_history(chat_history)
+
+    prompt = f"""
+    You are an expert Snowflake SQL data analyst. Your task is to write a single, valid Snowflake SQL query.
+    Use the conversation history to understand context for follow-up questions. For example, if the user asks "what about last week?", refer to the previous question to understand what data they are asking for.
+
+    **Database Schema:**
+    ---
+    {db_schema}
+    ---
+
+    **Previous Conversation:**
+    ---
+    {formatted_history if formatted_history else "No previous conversation."}
+    ---
+
+    **User Question:**
+    "{user_question}"
+
+    **SQL Query:**
     """
-    A placeholder function to simulate the agent's response generation.
-    Replace this with your actual agent.run(prompt) call.
+    try:
+        response = model.generate_content(prompt)
+        sql_query = response.text.strip()
+        if sql_query.lower().startswith("```sql"):
+            sql_query = sql_query[5:-3].strip()
+        return sql_query
+    except Exception as e:
+        print(f"Error generating SQL query: {e}")
+        return None
+
+def format_chat_history(chat_history: list):
+    """Helper to format chat history for the prompt."""
+    if not chat_history:
+        return ""
+    return "\n".join([f"{msg['role'].title()}: {msg['content']}" for msg in chat_history])
+    
+# --- The Main Agent "Brain" ---
+
+def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
     """
-    response_text = (
-        "Based on my analysis, organic banana sales in New Brunswick are down 40% this week "
-        "compared to the last 4-week average. My investigation indicates this is due to a "
-        "stockout that began on Tuesday morning. Inventory levels dropped to zero and were not "
-        "replenished.\n\n**Recommendation:** I recommend placing an emergency order for organic "
-        "bananas and investigating the restocking delay from the distribution center to prevent "
-        "future lost sales."
-    )
-    # Simulate a "thinking" delay
-    with st.spinner("Aria is investigating..."):
-        time.sleep(2)
+    The main agentic loop that thinks, acts, and synthesizes an answer.
+    """
+    print("\n[Aria's Brain] Starting new investigation...")
+    
+    # THOUGHT: The agent thinks about how to answer the high-level question.
+    # It formulates a plan and identifies the data it needs.
+    print("[Aria's Brain] Step 1: Formulating an analysis plan...")
+    
+    plan_prompt = f"""
+    You are Aria, an Autonomous Retail Intelligence Agent. Your goal is to perform a root cause analysis.
+    A manager has asked: "{user_question}"
+    
+    Based on the database schema, create a step-by-step plan to investigate this.
+    For each step, state the specific question you need to answer.
+    
+    Example Plan:
+    1. Check the sales figures for the specified product and time frame.
+    2. Analyze the inventory levels to check for stockouts.
+    3. Examine the spoilage data to see if waste was a factor.
+    
+    Your plan should be concise and logical.
 
-    # Stream the response to the UI
-    def stream_response():
-        for word in response_text.split(" "):
-            yield word + " "
-            time.sleep(0.05)
-    return stream_response
+    **Database Schema:**
+    ---
+    {db_schema}
+    ---
+    
+    **Analysis Plan:**
+    """
+    
+    genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    plan_response = model.generate_content(plan_prompt)
+    analysis_plan = plan_response.text
+    print(f"Analysis Plan:\n{analysis_plan}")
+    
+    # ACTION & OBSERVATION: The agent executes the plan, step by step.
+    print("\n[Aria's Brain] Step 2: Executing plan and gathering data...")
+    
+    observations = ""
+    sub_questions = [line.split('. ')[1] for line in analysis_plan.strip().split('\n') if '. ' in line]
+    
+    for i, sub_q in enumerate(sub_questions, 1):
+        # The agent uses its tool to get data for each step of the plan.
+        observation = text_to_sql_tool(sub_q, db_schema, chat_history)
+        observations += f"Observation {i} (from question '{sub_q}'):\n{observation}\n\n"
+        
+    print(f"--- All Data Gathered ---\n{observations}")
 
-# --- Application Title and Introduction ---
-st.title("🤖 Aria: The Autonomous Retail Intelligence Agent")
-st.markdown("""
-Welcome! I am Aria, your AI-powered assistant for analyzing store performance.
-Ask me a high-level question, and I will autonomously investigate the issue by querying Snowflake to find the root cause.
-\n*For example: 'Why are we losing money on avocados this week at the Edison store?'*
-""")
+    # FINAL SYNTHESIS: The agent combines all its observations into a final answer.
+    print("[Aria's Brain] Step 3: Synthesizing final recommendation...")
+    
+    synthesis_prompt = f"""
+    You are Aria, an Autonomous Retail Intelligence Agent. You have completed your investigation into the manager's question: "{user_question}"
+    
+    You executed a plan and gathered the following data:
+    ---
+    {observations}
+    ---
+    
+    Based on all of these observations, provide a final, comprehensive answer.
+    Start with a direct answer to the question.
+    Then, provide a brief summary of the key findings from your investigation.
+    Finally, if applicable, suggest a recommended next step or action for the manager.
+    Your tone should be professional, data-driven, and helpful.
+    """
+    
+    final_answer_response = model.generate_content(synthesis_prompt)
+    return final_answer_response.text.strip()
 
 
-# --- Chat History Management ---
-# Initialize chat history in session state if it doesn't exist.
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+def main():
+    """Main function to run the interactive console."""
+    print("Fetching database schema once for the session...")
+    db_schema = get_schema_for_agent()
+    if not db_schema:
+        print("Fatal: Could not retrieve database schema. Exiting.")
+        return
+    print("Schema loaded. Aria is ready.\n")
+    
+    chat_history = []
 
-# Display prior chat messages on each rerun.
-for message in st.session_state.messages:
-    # Use custom icons for user and assistant
-    avatar = '🧑‍💻' if message["role"] == "user" else '🤖'
-    with st.chat_message(message["role"], avatar=avatar):
-        st.markdown(message["content"])
+    while True:
+        user_question = input("Ask Aria a high-level question (or type 'exit' to quit): ")
+        if user_question.lower() in ['exit', 'quit']:
+            print("Shutting down Aria. Goodbye!")
+            break
+        if not user_question:
+            continue
+            
+        # The main loop now calls the new agentic flow
+        final_answer = run_agentic_flow(user_question, db_schema, chat_history)
+        
+        print("\n💡 Aria's Final Answer:")
+        print(final_answer)
+        print("-" * 20 + "\n")
+        
+        chat_history.append({"role": "user", "content": user_question})
+        chat_history.append({"role": "assistant", "content": final_answer})
 
+if __name__ == "__main__":
+    main()
 
-# --- User Input and Agent Response ---
-# The st.chat_input widget displays a text input field at the bottom of the page.
-if prompt := st.chat_input("Ask Aria a question..."):
-    # Add the user's message to the chat history and display it.
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user", avatar='🧑‍💻'):
-        st.markdown(prompt)
-
-    # Generate and display the agent's response.
-    with st.chat_message("assistant", avatar='🤖'):
-        # The st.write_stream function is used to display the streamed response.
-        response_generator = mock_agent_response(prompt)
-        full_response = st.write_stream(response_generator)
-
-    # Add the full response from the agent to the chat history.
-    st.session_state.messages.append({"role": "assistant", "content": full_response})
 
