@@ -2,12 +2,12 @@ import snowflake.connector
 
 # Replace with your actual credentials
 conn = snowflake.connector.connect(
-    user="YOUR_USERNAME",
-    password="YOUR_PASSWORD",
-    account="YOUR_ACCOUNT_IDENTIFIER",
-    warehouse="YOUR_WAREHOUSE_NAME",
-    database="YOUR_DATABASE_NAME",
-    schema="YOUR_SCHEMA_NAME"
+    user="MATTDSPECHT",
+    password="Chrwx2007#extra",
+    account="IROUKNG-OG97168",
+    warehouse="SNOWFLAKE_LEARNING_WH",
+    database="SNOWFLAKE_LEARNING_DB",
+    schema="MATTDSPECHT_LOAD_SAMPLE_DATA_FROM_S3"
 )
 
 # You are now connected!
