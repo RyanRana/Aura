@@ -24,18 +24,6 @@ try:
 
 except Exception as e:
     print(f"Error connecting to Snowflake: {e}")
-
-
-# Replace with your actual credentials
-conn = snowflake.connector.connect(
-    user="MATTDSPECHT",
-    password="Chrwx2007#extra",
-    account="IROUKNG-OG97168",
-    warehouse="ARIA_WH",
-    database="ARIA",
-    schema="MART"
-)
-
 # You are now connected!
 # Create a cursor object to execute queries.
 cur = conn.cursor()
