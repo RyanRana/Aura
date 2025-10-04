@@ -1,0 +1,7 @@
+streamlit
+snowflake-connector-python
+langchain
+langchain-google-genai
+python-dotenv
+langchainhub
+pandas
