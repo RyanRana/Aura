@@ -58,7 +58,6 @@ def text_to_sql_tool(question: str, db_schema: str, chat_history: list):
 
 def generate_sql_query(user_question: str, db_schema: str, chat_history: list):
     """Uses Gemini to generate a SQL query from a user question."""
-    # ... (code is unchanged from previous version)
     load_dotenv()
     genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
     model = genai.GenerativeModel('gemini-2.5-flash-lite')
@@ -67,6 +66,13 @@ def generate_sql_query(user_question: str, db_schema: str, chat_history: list):
     prompt = f"""
     You are an expert Snowflake SQL data analyst. Your task is to write a single, valid Snowflake SQL query.
     Use the conversation history to understand context for follow-up questions. For example, if the user asks "what about last week?", refer to the previous question to understand what data they are asking for.
+
+    **IMPORTANT DATABASE NOTES:**
+    - The DIM_DATE table has duplicate DATE_KEY entries (each date appears 3 times)
+    - Use DISTINCT when selecting DATE_KEY from DIM_DATE to avoid "Single-row subquery returns more than one row" errors
+    - The data is from July 2025 to October 2025 (test data)
+    - Use NET_SALES for revenue calculations (not GROSS_SALES)
+    - Always use proper JOINs between tables
 
     **Database Schema:**
     ---
@@ -134,11 +140,15 @@ def route_user_question(user_question: str, db_schema: str):
     **Instructions:**
     Analyze the user's question and classify it into one of the following categories:
     1. `greeting`: The user is saying hello, thank you, or other conversational pleasantries.
-    2. `data_query`: The user is asking a question that can DEFINITELY be answered using the provided database schema (e.g., questions about sales, products, inventory, spoilage, revenue, transactions).
+    2. `data_query`: The user is asking a question that can be answered using the provided database schema. This includes:
+       - Direct questions about sales, products, inventory, revenue, transactions
+       - Analytical questions like growth rates, trends, comparisons, performance metrics
+       - Questions about underperforming products, best sellers, seasonal patterns
+       - Any business question that can be derived from sales data, product data, or date information
     3. `off_topic`: The user is asking a question that is not a greeting and cannot be answered by the database schema (e.g., "what is the capital of France?", "tell me a joke", "what's the weather?", "how do I cook pasta?").
-    4. `unanswerable`: The user is asking a question that seems related to retail/business but cannot be answered with the available data schema (e.g., questions about competitors, market trends, external data, future predictions, or data not in the schema).
+    4. `unanswerable`: The user is asking a question that requires external data not in the schema (e.g., questions about competitors, market trends, external benchmarks, future predictions, or data not available in the system).
 
-    **IMPORTANT:** Be conservative. If you're unsure whether the question can be answered with the schema, classify it as `unanswerable` rather than `data_query`.
+    **IMPORTANT:** Be optimistic. If the question is about business/retail and could potentially be answered with sales data, product data, or date analysis, classify it as `data_query`. Only use `unanswerable` for questions that clearly require external data sources.
 
     Your response MUST be a JSON object with a single key "intent".
 
@@ -164,17 +174,26 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
     """
     print("\n[Aria's Brain] Starting new investigation...")
     start_time = time.time()
-    MAX_EXECUTION_TIME = 30  # 30 seconds timeout
+    MAX_EXECUTION_TIME = 60  # 60 seconds timeout
     
     print("[Aria's Brain] Step 1: Formulating an analysis plan...")
     
     plan_prompt = f"""
-    You are Aria, an Autonomous Retail Intelligence Agent. Your goal is to perform a root cause analysis.
+    You are Aria, an Autonomous Retail Intelligence Agent. Your goal is to perform a comprehensive analysis.
     A manager has asked: "{user_question}"
     
     Based on the database schema, create a step-by-step plan to investigate this.
     The plan should be a simple numbered list. Each item must be a single, clear question to be answered by querying the database.
     Do NOT include any markdown, rationale, or other descriptive text.
+
+    **IMPORTANT DATABASE NOTES:**
+    - The DIM_DATE table has duplicate DATE_KEY entries (each date appears 3 times)
+    - Use DISTINCT when selecting DATE_KEY from DIM_DATE to avoid errors
+    - The data is from July 2025 to October 2025 (test data)
+    - Use NET_SALES for revenue calculations (not GROSS_SALES)
+    - Keep queries simple and focused on one question at a time
+    - For analytical questions (growth rates, trends, comparisons), break them into multiple steps
+    - For performance questions, compare products/dates/periods systematically
 
     **Database Schema:**
     ---
@@ -195,7 +214,7 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
     observations = ""
     sub_questions = []
     failed_queries = 0
-    max_failed_queries = 3  # Stop if too many queries fail
+    max_failed_queries = 5  # Stop if too many queries fail
     
     for line in analysis_plan.strip().split('\n'):
         line = line.strip()
@@ -216,10 +235,13 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
             
         observation = text_to_sql_tool(sub_q, db_schema, chat_history)
         
-        # Check if query failed
-        if "Error:" in observation or "Query returned no results." in observation:
+        # Check if query failed (be more lenient with "no results")
+        if "Error:" in observation:
             failed_queries += 1
-            print(f"[Aria's Brain] Query {i} failed. Failed count: {failed_queries}")
+            print(f"[Aria's Brain] Query {i} failed with error. Failed count: {failed_queries}")
+        elif "Query returned no results." in observation:
+            # Don't count "no results" as a failure - it might be expected for some queries
+            print(f"[Aria's Brain] Query {i} returned no results (not counted as failure)")
         else:
             failed_queries = 0  # Reset counter on successful query
             
@@ -227,13 +249,16 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
         
     print(f"--- All Data Gathered ---\n{observations}")
 
-    # Check if we have any meaningful data
-    if not observations.strip() or failed_queries >= max_failed_queries:
+    # Check if we have any meaningful data (be more lenient)
+    if not observations.strip():
         return "I apologize, but I'm unable to find relevant data to answer your question. The question may be outside the scope of our available data, or there might be an issue with the data connection. Please try rephrasing your question or ask about sales, inventory, or product data that should be available in our system."
+    elif failed_queries >= max_failed_queries:
+        # Even if some queries failed, try to synthesize what we have
+        print(f"[Aria's Brain] Some queries failed ({failed_queries}), but proceeding with available data...")
 
     print("[Aria's Brain] Step 3: Synthesizing final answer...")
     
-    # --- MODIFIED PROMPT: Removed the next steps section ---
+    # --- MODIFIED PROMPT: User-friendly, concise responses ---
     synthesis_prompt = f"""
     You are Aria, an Autonomous Retail Intelligence Agent. You have completed your investigation into the manager's question: "{user_question}"
     
@@ -242,10 +267,20 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
     {observations}
     ---
     
-    Based on all of these observations, provide a final, comprehensive answer.
-    Start with a direct answer to the question.
-    Then, provide a brief summary of the key findings from your investigation.
-    Your tone should be professional, data-driven, and helpful.
+    Provide a clear, direct answer to the user's question. Be concise and user-friendly.
+    
+    **IMPORTANT GUIDELINES:**
+    - Start with a direct answer to their question
+    - Keep it simple and conversational - avoid technical jargon
+    - Don't explain your methodology, database queries, or technical process
+    - Don't mention table names, column names, or SQL details
+    - Don't explain how you calculated dates or found the data
+    - Focus on the business insights, not the technical process
+    - If there are interesting additional insights, mention them briefly
+    - Maximum 2-3 sentences unless the question specifically asks for detailed analysis
+    
+    **Example of GOOD response:** "Your total revenue for last week was $1,402,427.01."
+    **Example of BAD response:** "To determine this, I first identified the latest date in our date dimension as October 4, 2025. I then calculated the date one week prior..."
     """
     
     final_answer_response = model.generate_content(synthesis_prompt)
