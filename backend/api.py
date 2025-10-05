@@ -12,7 +12,13 @@ import pandas as pd
 
 # --- Flask App Initialization ---
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}}) # This enables Cross-Origin Resource Sharing
+
+# Configure CORS with explicit settings for production
+CORS(app, 
+     resources={r"/api/*": {"origins": "*"}},
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "OPTIONS"],
+     supports_credentials=False)
 
 # Define a folder to store temporary uploads
 UPLOAD_FOLDER = 'temp_uploads'
@@ -25,6 +31,25 @@ print("Loading database schema for the API...")
 DB_SCHEMA = get_schema_for_agent()
 if not DB_SCHEMA:
     print("FATAL: Could not load database schema. The API may not function correctly.")
+
+# --- Error Handlers to ensure CORS works even with errors ---
+@app.after_request
+def after_request(response):
+    """Ensure CORS headers are present on all responses."""
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+    return response
+
+@app.errorhandler(404)
+def not_found(error):
+    """Handle 404 errors with CORS headers."""
+    return jsonify({"error": "Not found"}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle 500 errors with CORS headers."""
+    return jsonify({"error": "Internal server error"}), 500
 
 # --- API Endpoints ---
 
