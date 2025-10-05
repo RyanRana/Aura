@@ -7,20 +7,16 @@
       "config": {
         "distDir": "dist"
       }
-    },
-    {
-      "src": "backend/api.py",
-      "use": "@vercel/python"
     }
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "backend/api.py"
+      "src": "/assets/(.*)",
+      "dest": "aria-frontend/dist/assets/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "aria-frontend/$1"
+      "dest": "aria-frontend/dist/index.html"
     }
   ]
 }
