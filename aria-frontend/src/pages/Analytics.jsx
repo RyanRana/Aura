@@ -68,154 +68,142 @@ function Analytics() {
       {/* Header */}
       <Box sx={{ mb: 6 }}>
         <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 2, color: '#fff' }}>
-          📊 Analytics Dashboard
+          Analytics Dashboard
         </Typography>
         <Typography variant="body1" sx={{ color: '#aaa', fontSize: '1.1rem' }}>
           Real-time insights from your retail data warehouse
         </Typography>
       </Box>
 
-      <Grid container spacing={4}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 4 }}>
         {/* Sales Trend Line Chart */}
-        <Grid item xs={12}>
-          <Card sx={{ backgroundColor: '#1e1e1e', height: '550px', border: '1px solid #333' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 3, color: '#fff', fontWeight: 600 }}>
-                📈 Sales Trend (Last 30 Days)
-              </Typography>
-              <ResponsiveContainer width="100%" height={460}>
-                <AreaChart data={data?.salesTrend || []}>
-                  <defs>
-                    <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  <XAxis dataKey="date" stroke="#aaa" />
-                  <YAxis stroke="#aaa" />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Area type="monotone" dataKey="sales" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorSales)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </Grid>
+        <Card sx={{ backgroundColor: '#1e1e1e', border: '1px solid #333' }}>
+          <CardContent sx={{ p: 3 }}>
+            <Typography variant="h6" sx={{ mb: 3, color: '#fff', fontWeight: 600 }}>
+              Sales Trend (Last 30 Days)
+            </Typography>
+            <ResponsiveContainer width="100%" height={400}>
+              <AreaChart data={data?.salesTrend || []}>
+                <defs>
+                  <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                <XAxis dataKey="date" stroke="#aaa" />
+                <YAxis stroke="#aaa" />
+                <Tooltip content={<CustomTooltip />} />
+                <Area type="monotone" dataKey="sales" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorSales)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
         {/* Top Products Pie Chart */}
-        <Grid item xs={12}>
-          <Card sx={{ backgroundColor: '#1e1e1e', height: '550px', border: '1px solid #333' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 3, color: '#fff', fontWeight: 600 }}>
-                🥇 Top Products by Revenue
-              </Typography>
-              <ResponsiveContainer width="100%" height={460}>
-                <PieChart>
-                  <Pie
-                    data={data?.topProducts || []}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={120}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {(data?.topProducts || []).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </Grid>
+        <Card sx={{ backgroundColor: '#1e1e1e', border: '1px solid #333' }}>
+          <CardContent sx={{ p: 3 }}>
+            <Typography variant="h6" sx={{ mb: 3, color: '#fff', fontWeight: 600 }}>
+              Top Products by Revenue
+            </Typography>
+            <ResponsiveContainer width="100%" height={400}>
+              <PieChart>
+                <Pie
+                  data={data?.topProducts || []}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={120}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {(data?.topProducts || []).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
         {/* Store Performance Bar Chart */}
-        <Grid item xs={12}>
-          <Card sx={{ backgroundColor: '#1e1e1e', height: '550px', border: '1px solid #333' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 3, color: '#fff', fontWeight: 600 }}>
-                🏪 Store Performance
-              </Typography>
-              <ResponsiveContainer width="100%" height={460}>
-                <BarChart data={data?.storePerformance || []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  <XAxis dataKey="store" stroke="#aaa" />
-                  <YAxis stroke="#aaa" />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="revenue" fill="#06b6d4" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </Grid>
+        <Card sx={{ backgroundColor: '#1e1e1e', border: '1px solid #333' }}>
+          <CardContent sx={{ p: 3 }}>
+            <Typography variant="h6" sx={{ mb: 3, color: '#fff', fontWeight: 600 }}>
+              Store Performance
+            </Typography>
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart data={data?.storePerformance || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                <XAxis dataKey="store" stroke="#aaa" />
+                <YAxis stroke="#aaa" />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="revenue" fill="#06b6d4" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
         {/* Daily Sales Volume */}
-        <Grid item xs={12}>
-          <Card sx={{ backgroundColor: '#1e1e1e', height: '550px', border: '1px solid #333' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 3, color: '#fff', fontWeight: 600 }}>
-                📦 Daily Sales Volume
-              </Typography>
-              <ResponsiveContainer width="100%" height={460}>
-                <LineChart data={data?.spoilageData || []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  <XAxis dataKey="date" stroke="#aaa" />
-                  <YAxis stroke="#aaa" />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend />
-                  <Line type="monotone" dataKey="quantity" name="Units Sold" stroke="#ef4444" strokeWidth={2} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="value" name="Revenue" stroke="#f59e0b" strokeWidth={2} dot={{ r: 4 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </Grid>
+        <Card sx={{ backgroundColor: '#1e1e1e', border: '1px solid #333' }}>
+          <CardContent sx={{ p: 3 }}>
+            <Typography variant="h6" sx={{ mb: 3, color: '#fff', fontWeight: 600 }}>
+              Daily Sales Volume
+            </Typography>
+            <ResponsiveContainer width="100%" height={400}>
+              <LineChart data={data?.spoilageData || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                <XAxis dataKey="date" stroke="#aaa" />
+                <YAxis stroke="#aaa" />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                <Line type="monotone" dataKey="quantity" name="Units Sold" stroke="#ef4444" strokeWidth={2} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="value" name="Revenue" stroke="#f59e0b" strokeWidth={2} dot={{ r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
         {/* Category Sales Comparison */}
-        <Grid item xs={12}>
-          <Card sx={{ backgroundColor: '#1e1e1e', height: '550px', border: '1px solid #333' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 3, color: '#fff', fontWeight: 600 }}>
-                📦 Top Products Comparison
-              </Typography>
-              <ResponsiveContainer width="100%" height={460}>
-                <BarChart data={data?.categoryComparison || []} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  <XAxis type="number" stroke="#aaa" />
-                  <YAxis dataKey="category" type="category" stroke="#aaa" width={150} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="sales" fill="#10b981" radius={[0, 8, 8, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </Grid>
+        <Card sx={{ backgroundColor: '#1e1e1e', border: '1px solid #333' }}>
+          <CardContent sx={{ p: 3 }}>
+            <Typography variant="h6" sx={{ mb: 3, color: '#fff', fontWeight: 600 }}>
+              Top Products Comparison
+            </Typography>
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart data={data?.categoryComparison || []} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                <XAxis type="number" stroke="#aaa" />
+                <YAxis dataKey="category" type="category" stroke="#aaa" width={150} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="sales" fill="#10b981" radius={[0, 8, 8, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
         {/* Promotion Effectiveness */}
-        <Grid item xs={12}>
-          <Card sx={{ backgroundColor: '#1e1e1e', height: '550px', border: '1px solid #333' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 3, color: '#fff', fontWeight: 600 }}>
-                🎯 Sales with vs without Promotions
-              </Typography>
-              <ResponsiveContainer width="100%" height={460}>
-                <BarChart data={data?.promotionEffectiveness || []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  <XAxis dataKey="promotion" stroke="#aaa" />
-                  <YAxis stroke="#aaa" />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend />
-                  <Bar dataKey="withPromo" fill="#8b5cf6" radius={[8, 8, 0, 0]} />
-                  <Bar dataKey="withoutPromo" fill="#6b7280" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+        <Card sx={{ backgroundColor: '#1e1e1e', border: '1px solid #333' }}>
+          <CardContent sx={{ p: 3 }}>
+            <Typography variant="h6" sx={{ mb: 3, color: '#fff', fontWeight: 600 }}>
+              Sales with vs without Promotions
+            </Typography>
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart data={data?.promotionEffectiveness || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                <XAxis dataKey="promotion" stroke="#aaa" />
+                <YAxis stroke="#aaa" />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                <Bar dataKey="withPromo" fill="#8b5cf6" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="withoutPromo" fill="#6b7280" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </Box>
     </Container>
   );
 }
