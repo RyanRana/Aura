@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Box, Container, Typography, Grid, Card, CardContent, CircularProgress } from '@mui/material';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
+import API_BASE_URL from '../config';
 
 // Color palette matching your dark theme
 const COLORS = ['#8b5cf6', '#ec4899', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'];
@@ -15,7 +16,7 @@ function Analytics() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:5001/api/analytics-data');
+        const response = await axios.get(`${API_BASE_URL}/api/analytics-data`);
         setData(response.data);
       } catch (err) {
         setError('Failed to load analytics data. Please ensure the backend is running.');

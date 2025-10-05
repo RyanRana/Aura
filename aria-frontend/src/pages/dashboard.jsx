@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Box, Container, Typography, Grid, Card, CardContent, List, ListItem, ListItemText, ListItemIcon, CircularProgress } from '@mui/material';
 import CircleIcon from '@mui/icons-material/Circle';
 import axios from 'axios';
+import API_BASE_URL from '../config';
 
 // A reusable card for the KPIs
 const KpiCard = ({ title, value }) => (
@@ -39,7 +40,7 @@ function Dashboard() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:5001/api/dashboard-data');
+        const response = await axios.get(`${API_BASE_URL}/api/dashboard-data`);
         setData(response.data);
       } catch (err) {
         setError('Failed to load dashboard data. Please ensure the backend is running and connected to Snowflake.');

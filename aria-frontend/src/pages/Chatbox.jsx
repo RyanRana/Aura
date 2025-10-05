@@ -4,6 +4,7 @@ import SendIcon from '@mui/icons-material/Send';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
+import API_BASE_URL from '../config';
 
 function Chatbox() {
   const [messages, setMessages] = useState([
@@ -24,7 +25,7 @@ function Chatbox() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:5001/api/chat', { message: input, history: messages });
+      const response = await axios.post(`${API_BASE_URL}/api/chat`, { message: input, history: messages });
       const auraMessage = { type: 'text', sender: 'aura', text: response.data.response };
       setMessages(prev => [...prev, auraMessage]);
     } catch (error) {
@@ -48,7 +49,7 @@ function Chatbox() {
 
     try {
       // Call the first endpoint to get the plan
-      const response = await axios.post('http://localhost:5001/api/analyze-csv', formData, {
+      const response = await axios.post(`${API_BASE_URL}/api/analyze-csv`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       // Add a special "plan" message to the chat
@@ -69,7 +70,7 @@ function Chatbox() {
 
     try {
         // Call the second endpoint to execute the upload
-        const response = await axios.post('http://localhost:5001/api/execute-upload', plan);
+        const response = await axios.post(`${API_BASE_URL}/api/execute-upload`, plan);
         setMessages(prev => [...prev, { type: 'text', sender: 'aura', text: response.data.message }]);
     } catch (error) {
         console.error("Upload execution error:", error);
