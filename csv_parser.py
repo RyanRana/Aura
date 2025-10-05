@@ -19,7 +19,7 @@ def get_all_table_schemas(schema_name: str):
         conn = snowflake.connector.connect(
             user=os.getenv("SNOWFLAKE_USER"), password=os.getenv("SNOWFLAKE_PASSWORD"),
             account=os.getenv("SNOWFLAKE_ACCOUNT"), warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
-            database=os.getenv("SNOWFLAKE_DATABASE"), schema=schema_name
+            database=os.getenv("SNOWFLAKE_DATABASE"), schema=os.getenv("SNOWFLAKE_SCHEMA")
         )
         cur = conn.cursor()
         query = f"""
@@ -83,6 +83,7 @@ def get_ai_upload_plan(csv_cols: list, all_db_schemas: dict):
     """
     try:
         response = model.generate_content(prompt)
+        # Simple parsing, assuming model returns clean JSON in a code block
         json_response_text = response.text.strip().replace("```json", "").replace("```", "")
         return json.loads(json_response_text), None
     except Exception as e:
@@ -114,7 +115,7 @@ def smart_upload_csv(file_path: str, table_name: str, schema_name: str, column_m
         conn = snowflake.connector.connect(
             user=os.getenv("SNOWFLAKE_USER"), password=os.getenv("SNOWFLAKE_PASSWORD"),
             account=os.getenv("SNOWFLAKE_ACCOUNT"), warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
-            database=os.getenv("SNOWFLAKE_DATABASE"), schema=schema_name
+            database=os.getenv("SNOWFLAKE_DATABASE"), schema=os.getenv("SNOWFLAKE_SCHEMA")
         )
         cur = conn.cursor()
 
@@ -175,30 +176,26 @@ if __name__ == "__main__":
             if err:
                 print(f"FATAL: {err}")
             else:
-                # Step 3: Present the plan to the user for confirmation
+                # Step 3: Present the plan to the user
                 print("\n--- AI Upload Plan ---")
                 print(f"Suggested Table: {upload_plan.get('suggested_table')}")
                 print("Column Mapping:")
                 print(json.dumps(upload_plan.get('column_mapping'), indent=2))
                 print("----------------------\n")
-
-                confirm = input("Do you want to proceed with this upload plan? (y/n): ")
-                if confirm.lower() == 'y':
-                    # Step 4: Execute the smart upload with the AI's plan
-                    suggested_table = upload_plan.get('suggested_table')
-                    mapping = upload_plan.get('column_mapping')
-                    
-                    if suggested_table and mapping:
-                        success, message = smart_upload_csv(
-                            test_csv_file, 
-                            suggested_table, 
-                            target_schema_name, 
-                            mapping
-                        )
-                        if not success:
-                            print(f"Upload failed. Reason: {message}")
-                    else:
-                        print("Upload aborted: AI plan was incomplete.")
+                
+                # Step 4: Execute the smart upload automatically
+                print("Proceeding with upload automatically...")
+                suggested_table = upload_plan.get('suggested_table')
+                mapping = upload_plan.get('column_mapping')
+                
+                if suggested_table and mapping:
+                    success, message = smart_upload_csv(
+                        test_csv_file, 
+                        suggested_table, 
+                        target_schema_name, 
+                        mapping
+                    )
+                    if not success:
+                        print(f"Upload failed. Reason: {message}")
                 else:
-                    print("Upload aborted by user.")
-
+                    print("Upload aborted: AI plan was incomplete.")
