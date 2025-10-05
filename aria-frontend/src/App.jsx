@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-do
 import { Box, AppBar, Toolbar, Button, Typography } from '@mui/material'; // Typography is still needed for other pages
 
 // IMPORT OUR PAGE COMPONENTS
-import Dashboard from './pages/Dashboard';
+import Dashboard from './pages/dashboard';
 import Chatbox from './pages/Chatbox';
 import Analytics from './pages/Analytics';
 
