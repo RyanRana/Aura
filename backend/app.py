@@ -99,7 +99,13 @@ def format_chat_history(chat_history: list):
     """Helper to format chat history for the prompt."""
     if not chat_history:
         return ""
-    return "\n".join([f"{msg['role'].title()}: {msg['content']}" for msg in chat_history])
+    
+    # NEW: Handle the new message format {'sender': ..., 'text': ...} from the frontend
+    # It also safely skips any non-text messages in the history (like upload plans)
+    return "\n".join([
+        f"{'User' if msg.get('sender') == 'user' else 'Assistant'}: {msg.get('text')}"
+        for msg in chat_history if msg.get('type') == 'text'
+    ])
 
 # --- NEW: Intent Router ---
 

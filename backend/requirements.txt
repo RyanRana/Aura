@@ -1,7 +1,9 @@
-streamlit
+Flask
+Flask-Cors
 snowflake-connector-python
 langchain
 langchain-google-genai
 python-dotenv
 langchainhub
 pandas
+google-generativeai
