@@ -65,7 +65,13 @@ def generate_sql_query(user_question: str, db_schema: str, chat_history: list):
 
     prompt = f"""
     You are an expert Snowflake SQL data analyst. Your task is to write a single, valid Snowflake SQL query.
-    Use the conversation history to understand context for follow-up questions. For example, if the user asks "what about last week?", refer to the previous question to understand what data they are asking for.
+    
+    **CONTEXT AWARENESS:**
+    Use the conversation history to understand context for follow-up questions. For example:
+    - If the user asks "what about last week?" after asking about "this week", apply the same analysis to last week
+    - If they ask "how about the other products?" after asking about a specific product, analyze all other products
+    - If they ask "what's the trend?" after asking about sales, show the trend over time
+    - Pronouns like "it", "that", "them" refer to the most recently discussed items
 
     **IMPORTANT DATABASE NOTES:**
     - The DIM_DATE table has duplicate DATE_KEY entries (each date appears 3 times)
@@ -107,12 +113,23 @@ def format_chat_history(chat_history: list):
     if not chat_history:
         return ""
     
-    # NEW: Handle the new message format {'sender': ..., 'text': ...} from the frontend
-    # It also safely skips any non-text messages in the history (like upload plans)
-    return "\n".join([
-        f"{'User' if msg.get('sender') == 'user' else 'Assistant'}: {msg.get('text')}"
-        for msg in chat_history if msg.get('type') == 'text'
-    ])
+    # Handle different message formats from frontend and console
+    formatted_messages = []
+    for msg in chat_history:
+        if isinstance(msg, dict):
+            # Frontend format: {'sender': 'user', 'text': '...', 'type': 'text'}
+            if msg.get('type') == 'text':
+                sender = 'User' if msg.get('sender') == 'user' else 'Assistant'
+                text = msg.get('text', '')
+                formatted_messages.append(f"{sender}: {text}")
+        elif isinstance(msg, dict) and 'role' in msg:
+            # Console format: {'role': 'user', 'content': '...'}
+            sender = 'User' if msg.get('role') == 'user' else 'Assistant'
+            text = msg.get('content', '')
+            formatted_messages.append(f"{sender}: {text}")
+    
+    # Return last 6 messages (3 exchanges) to keep context manageable
+    return "\n".join(formatted_messages[-6:])
 
 # --- NEW: Intent Router ---
 
@@ -178,9 +195,17 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
     
     print("[Aria's Brain] Step 1: Formulating an analysis plan...")
     
+    formatted_history = format_chat_history(chat_history)
+    
     plan_prompt = f"""
     You are Aria, an Autonomous Retail Intelligence Agent. Your goal is to perform a comprehensive analysis.
     A manager has asked: "{user_question}"
+    
+    **CONTEXT AWARENESS:**
+    Consider the conversation history when creating your analysis plan. If this is a follow-up question, build upon previous analysis:
+    - If they previously asked about a specific product, and now ask "what about the others?", plan to analyze all other products
+    - If they asked about "this week" and now ask "last week", adapt the same analysis for last week
+    - If they ask "what's the trend?" after sales questions, plan to show time-based trends
     
     Based on the database schema, create a step-by-step plan to investigate this.
     The plan should be a simple numbered list. Each item must be a single, clear question to be answered by querying the database.
@@ -198,6 +223,11 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
     **Database Schema:**
     ---
     {db_schema}
+    ---
+    
+    **Previous Conversation:**
+    ---
+    {formatted_history if formatted_history else "No previous conversation."}
     ---
     
     **Analysis Plan:**
@@ -258,13 +288,24 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
 
     print("[Aria's Brain] Step 3: Synthesizing final answer...")
     
-    # --- MODIFIED PROMPT: User-friendly, concise responses ---
+    # --- MODIFIED PROMPT: User-friendly, concise responses with context ---
     synthesis_prompt = f"""
     You are Aria, an Autonomous Retail Intelligence Agent. You have completed your investigation into the manager's question: "{user_question}"
+    
+    **CONVERSATION CONTEXT:**
+    Consider the conversation history to provide contextually appropriate responses:
+    - If this is a follow-up question, acknowledge the connection to previous questions
+    - If they're asking about "the others" or "other products", reference what was previously discussed
+    - If they're asking for trends or comparisons, relate it to previous data points mentioned
     
     You executed a plan and gathered the following data:
     ---
     {observations}
+    ---
+    
+    **Previous Conversation:**
+    ---
+    {formatted_history if formatted_history else "No previous conversation."}
     ---
     
     Provide a clear, direct answer to the user's question. Be concise and user-friendly.
@@ -278,6 +319,7 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
     - Focus on the business insights, not the technical process
     - If there are interesting additional insights, mention them briefly
     - Maximum 2-3 sentences unless the question specifically asks for detailed analysis
+    - If this is a follow-up question, briefly acknowledge the connection to previous discussion
     
     **Example of GOOD response:** "Your total revenue for last week was $1,402,427.01."
     **Example of BAD response:** "To determine this, I first identified the latest date in our date dimension as October 4, 2025. I then calculated the date one week prior..."
