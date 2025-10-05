@@ -77,63 +77,55 @@ function Dashboard() {
   ];
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 6, mb: 6 }}>
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4, px: 3 }}>
       {/* Header */}
-      <Box sx={{ mb: 6, textAlign: 'center' }}>
-        <Typography variant="h3" component="h1" sx={{ fontWeight: 'bold', mb: 2, color: '#fff' }}>
-          ARIA DASHBOARD
+      <Box sx={{ mb: 4, textAlign: 'center' }}>
+        <Typography variant="h3" component="h1" sx={{ fontWeight: 'bold', mb: 1, color: '#fff' }}>
+          AURA DASHBOARD
         </Typography>
-        <Typography variant="body1" sx={{ color: '#aaa', fontSize: '1.1rem' }}>
+        <Typography variant="body1" sx={{ color: '#aaa', fontSize: '1rem' }}>
           Retail Intelligence & Analytics Dashboard - Real-time Insights from your data.
         </Typography>
       </Box>
 
-      <Grid container spacing={4}>
-        {/* KPI Cards - Full width on top */}
-        <Grid item xs={12}>
-          <Grid container spacing={4}>
-            {kpiData.map((kpi, index) => (
-              <Grid item xs={12} sm={6} md={3} key={index}>
-                <KpiCard title={kpi.title} value={kpi.value} />
-              </Grid>
-            ))}
-          </Grid>
-        </Grid>
+      {/* KPI Cards Grid */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 3, mb: 3 }}>
+        {kpiData.map((kpi, index) => (
+          <KpiCard key={index} title={kpi.title} value={kpi.value} />
+        ))}
+      </Box>
 
-        {/* Recent Sales Activity - Full width below */}
-        <Grid item xs={12}>
-          <Card sx={{ backgroundColor: '#1e1e1e', border: '1px solid #333' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, color: '#fff' }}>
-                📋 Recent Sales Activity
-              </Typography>
-              <List>
-                {data.recentSales.map((sale, index) => (
-                  <ListItem 
-                    key={index} 
-                    sx={{ 
-                      borderBottom: index !== data.recentSales.length - 1 ? '1px solid #333' : 'none', 
-                      py: 2,
-                      px: 2,
-                      '&:hover': { backgroundColor: '#252525' }
-                    }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 'auto', mr: 2 }}>
-                      <CircleIcon sx={{ color: '#8b5cf6', fontSize: '0.7rem' }} />
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary={sale.text} 
-                      secondary={sale.value}
-                      primaryTypographyProps={{ sx: { color: '#fff', fontSize: '1rem' } }}
-                      secondaryTypographyProps={{ sx: { color: '#10b981', fontWeight: 600, fontSize: '0.95rem' } }}
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      {/* Recent Sales Activity */}
+      <Card sx={{ backgroundColor: '#1e1e1e', border: '1px solid #333' }}>
+        <CardContent sx={{ p: 3 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#fff' }}>
+            📋 Recent Sales Activity
+          </Typography>
+          <List sx={{ py: 0 }}>
+            {data.recentSales.map((sale, index) => (
+              <ListItem 
+                key={index} 
+                sx={{ 
+                  borderBottom: index !== data.recentSales.length - 1 ? '1px solid #333' : 'none', 
+                  py: 1.5,
+                  px: 2,
+                  '&:hover': { backgroundColor: '#252525' }
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 'auto', mr: 2 }}>
+                  <CircleIcon sx={{ color: '#8b5cf6', fontSize: '0.7rem' }} />
+                </ListItemIcon>
+                <ListItemText 
+                  primary={sale.text} 
+                  secondary={sale.value}
+                  primaryTypographyProps={{ sx: { color: '#fff', fontSize: '0.95rem' } }}
+                  secondaryTypographyProps={{ sx: { color: '#10b981', fontWeight: 600, fontSize: '0.9rem' } }}
+                />
+              </ListItem>
+            ))}
+          </List>
+        </CardContent>
+      </Card>
     </Container>
   );
 }

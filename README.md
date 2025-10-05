@@ -1,12 +1,12 @@
 ```
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                               ║
-║     █████╗ ██████╗ ██╗ █████╗     ██████╗ ███████╗████████╗ █████╗ ██╗██╗   ║
-║    ██╔══██╗██╔══██╗██║██╔══██╗    ██╔══██╗██╔════╝╚══██╔══╝██╔══██╗██║██║   ║
-║    ███████║██████╔╝██║███████║    ██████╔╝█████╗     ██║   ███████║██║██║   ║
-║    ██╔══██║██╔══██╗██║██╔══██║    ██╔══██╗██╔══╝     ██║   ██╔══██║██║██║   ║
-║    ██║  ██║██║  ██║██║██║  ██║    ██║  ██║███████╗   ██║   ██║  ██║██║███████╗║
-║    ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═╝    ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝╚══════╝║
+║     █████╗ ██╗   ██╗██████╗  █████╗     ██████╗ ███████╗████████╗ █████╗ ██╗██╗   ║
+║    ██╔══██╗██║   ██║██╔══██╗██╔══██╗    ██╔══██╗██╔════╝╚══██╔══╝██╔══██╗██║██║   ║
+║    ███████║██║   ██║██████╔╝███████║    ██████╔╝█████╗     ██║   ███████║██║██║   ║
+║    ██╔══██║██║   ██║██╔══██╗██╔══██║    ██╔══██╗██╔══╝     ██║   ██╔══██║██║██║   ║
+║    ██║  ██║╚██████╔╝██║  ██║██║  ██║    ██║  ██║███████╗   ██║   ██║  ██║██║███████╗║
+║    ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝    ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝╚══════╝║
 ║                                                                               ║
 ║              🤖 Autonomous Retail Intelligence Agent 🤖                       ║
 ║                                                                               ║
@@ -15,11 +15,11 @@
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 ```
 
-# 🚀 Aria: Autonomous Retail Intelligence Agent
+# 🚀 Aura: Autonomous Retail Intelligence Agent
 
-**Aria** is an AI-powered analytics platform designed to provide retail managers with immediate, data-driven insights. It features a conversational AI that can perform multi-step investigations into business questions by querying a Snowflake data warehouse, alongside a real-time analytics dashboard.
+**Aura** is an AI-powered analytics platform designed to provide retail managers with immediate, data-driven insights. It features a conversational AI that can perform multi-step investigations into business questions by querying a Snowflake data warehouse, alongside a real-time analytics dashboard.
 
-> 💡 **What makes Aria different?** Unlike traditional BI tools, Aria doesn't just answer questions—it **investigates** them. Ask "Why are sales down?" and watch it autonomously break down the problem, query multiple data sources, and synthesize actionable insights.
+> 💡 **What makes Aura different?** Unlike traditional BI tools, Aura doesn't just answer questions—it **investigates** them. Ask "Why are sales down?" and watch it autonomously break down the problem, query multiple data sources, and synthesize actionable insights.
 
 ***
 
@@ -46,7 +46,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  📊 ARIA BY THE NUMBERS                                         │
+│  📊 AURA BY THE NUMBERS                                         │
 ├─────────────────────────────────────────────────────────────────┤
 │  🤖 AI Models Used:        Google Gemini 2.5 Flash Lite         │
 │  ❄️  Database:              Snowflake Cloud Data Warehouse      │
@@ -155,7 +155,7 @@ You should now have both servers running and be able to access the application i
 
 ```
 ╔═══════════════════════════════════════════════════════════════════════════════════╗
-║                            🌐 ARIA INTELLIGENCE SYSTEM                            ║
+║                            🌐 AURA INTELLIGENCE SYSTEM                            ║
 ╚═══════════════════════════════════════════════════════════════════════════════════╝
 
 ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -346,14 +346,14 @@ You should now have both servers running and be able to access the application i
 
 ### 📊 Key Innovation: Multi-Step Autonomous Analysis
 
-Unlike traditional chatbots that answer questions directly, Aria uses an **agentic workflow**:
+Unlike traditional chatbots that answer questions directly, Aura uses an **agentic workflow**:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                    🆚 TRADITIONAL vs AGENTIC APPROACH                       │
 └────────────────────────────────────────────────────────────────────────────┘
 
-   TRADITIONAL BI CHATBOT                    🚀 ARIA (AGENTIC)
+   TRADITIONAL BI CHATBOT                    🚀 AURA (AGENTIC)
    ═══════════════════════                   ════════════════════
 
    User: "Why are sales down?"               User: "Why are sales down?"
@@ -392,7 +392,7 @@ Unlike traditional chatbots that answer questions directly, Aria uses an **agent
    🎯 Value: Low                             🎯 Value: High
 ```
 
-| Feature | Traditional Chatbot | 🚀 Aria (Agentic) |
+| Feature | Traditional Chatbot | 🚀 Aura (Agentic) |
 |---------|-------------------|------------------|
 | **Query Approach** | Single query → Single answer | Complex question → Multiple investigations → Synthesized insight |
 | **Analysis Depth** | Surface-level responses | Root cause analysis with context |

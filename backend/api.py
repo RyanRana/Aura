@@ -30,7 +30,7 @@ if not DB_SCHEMA:
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    """Endpoint to handle chat interactions with the Aria agent."""
+    """Endpoint to handle chat interactions with the Aura agent."""
     try:
         data = request.json
         user_question = data.get('message')
@@ -47,7 +47,7 @@ def chat():
             # If it's a data query, run the full agentic flow
             final_answer = run_agentic_flow(user_question, DB_SCHEMA, chat_history)
         elif intent == 'greeting':
-            final_answer = "Hello! I'm Aria, your Autonomous Retail Intelligence Agent. How can I help you analyze our data today?"
+            final_answer = "Hello! I'm Aura, your Autonomous Retail Intelligence Agent. How can I help you analyze our data today?"
         else: # Off-topic or other intents
             final_answer = "I'm sorry, but I can only answer questions related to our retail data. Please ask something about sales, inventory, or product performance."
 
