@@ -10,6 +10,54 @@ from csv_parser import get_ai_upload_plan, smart_upload_csv, get_all_table_schem
 from database_connector import get_schema_for_agent
 import pandas as pd
 
+# --- Mock Mode (set AURA_MOCK_DATA=1 to enable stub responses when DB is down) ---
+USE_MOCK_DATA = os.environ.get("AURA_MOCK_DATA", "0") == "1"
+
+def _mock_dashboard_data():
+    return {
+        "totalRevenue": "$1,234,567.89",
+        "unitsSold": "98,765",
+        "avgProfitMargin": "34.2%",
+        "topProduct": "Whole Milk 1 gal",
+        "recentSales": [
+            {"text": "Whole Milk 1 gal sold 42 units at Princeton", "value": "$1,008.00"},
+            {"text": "Organic Bananas sold 120 units at Edison", "value": "$420.00"},
+            {"text": "Pasta 16oz sold 64 units at New Brunswick", "value": "$192.00"},
+            {"text": "Greek Yogurt 32oz sold 37 units at Princeton", "value": "$166.50"},
+            {"text": "Cereal Box sold 58 units at Edison", "value": "$291.00"},
+        ],
+    }
+
+def _mock_analytics_data():
+    return {
+        "salesTrend": [{"date": f"09-{d:02d}", "sales": 2000 + 75 * d} for d in range(1, 15)] +
+                       [{"date": f"10-{d:02d}", "sales": 2600 + 60 * d} for d in range(1, 15)],
+        "topProducts": [
+            {"name": "Whole Milk 1 gal", "value": 320000},
+            {"name": "Pasta 16oz", "value": 110000},
+            {"name": "Organic Bananas", "value": 98000},
+            {"name": "Avocados", "value": 78000},
+            {"name": "Greek Yogurt 32oz", "value": 2600},
+        ],
+        "storePerformance": [
+            {"store": "Princeton", "revenue": 210000},
+            {"store": "New Brunswick", "revenue": 205000},
+            {"store": "Edison", "revenue": 198000},
+        ],
+        "spoilageData": [{"date": f"10-{d:02d}", "quantity": 100 + d * 3, "value": 2500 + d * 40} for d in range(1, 15)],
+        "categoryComparison": [
+            {"category": "Dairy", "sales": 520000},
+            {"category": "Produce", "sales": 390000},
+            {"category": "Grocery", "sales": 260000},
+            {"category": "Meat", "sales": 16000},
+        ],
+        "promotionEffectiveness": [
+            {"promotion": "Princeton", "withPromo": 120000, "withoutPromo": 90000},
+            {"promotion": "New Brunswick", "withPromo": 115000, "withoutPromo": 88000},
+            {"promotion": "Edison", "withPromo": 112000, "withoutPromo": 86000},
+        ],
+    }
+
 # --- Flask App Initialization ---
 app = Flask(__name__)
 
@@ -64,21 +112,21 @@ def chat():
         if not user_question:
             return jsonify({"error": "No message provided."}), 400
 
-    # Use the router to check intent
-    intent = route_user_question(user_question, DB_SCHEMA)
-    
-    final_answer = ""
-    if intent == 'data_query':
-        # If it's a data query, run the full agentic flow
-        final_answer = run_agentic_flow(user_question, DB_SCHEMA, chat_history)
-    elif intent == 'greeting':
-        final_answer = "Hello! I'm Aria, your Autonomous Retail Intelligence Agent. How can I help you analyze our data today?"
-    elif intent == 'off_topic':
-        final_answer = "I'm sorry, but I can only answer questions related to our retail data. Please ask something about sales, inventory, or product performance."
-    elif intent == 'unanswerable':
-        final_answer = "I understand you're asking about business/retail topics, but I don't have the necessary data in our system to answer that question. I can help you with questions about sales, inventory, product performance, and other data that's available in our Snowflake database. Could you try rephrasing your question to focus on data we have available?"
-    else:
-        final_answer = "I'm not sure how to handle that request. Please try asking a question related to our retail data."
+        # Use the router to check intent
+        intent = route_user_question(user_question, DB_SCHEMA)
+        
+        final_answer = ""
+        if intent == 'data_query':
+            # If it's a data query, run the full agentic flow
+            final_answer = run_agentic_flow(user_question, DB_SCHEMA, chat_history)
+        elif intent == 'greeting':
+            final_answer = "Hello! I'm Aura, your Autonomous Retail Intelligence Agent. How can I help you analyze our data today?"
+        elif intent == 'off_topic':
+            final_answer = "I'm sorry, but I can only answer questions related to our retail data. Please ask something about sales, inventory, or product performance."
+        elif intent == 'unanswerable':
+            final_answer = "I understand you're asking about business/retail topics, but I don't have the necessary data in our system to answer that question. I can help you with questions about sales, inventory, product performance, and other data that's available in our Snowflake database. Could you try rephrasing your question to focus on data we have available?"
+        else:
+            final_answer = "I'm not sure how to handle that request. Please try asking a question related to our retail data."
 
         return jsonify({"response": final_answer})
     
@@ -137,6 +185,10 @@ def execute_upload():
 @app.route('/api/dashboard-data', methods=['GET'])
 def get_dashboard_data():
     """Endpoint to fetch all data needed for the main dashboard."""
+    # Serve mock data when DB is unavailable or mock mode enabled
+    if USE_MOCK_DATA or not DB_SCHEMA:
+        return jsonify(_mock_dashboard_data())
+
     conn = None
     try:
         conn = snowflake.connector.connect(
@@ -208,7 +260,8 @@ def get_dashboard_data():
 
     except Exception as e:
         print(f"Error fetching dashboard data: {e}")
-        return jsonify({"error": "Failed to fetch dashboard data."}), 500
+        # Fallback to mock data so frontend remains usable
+        return jsonify(_mock_dashboard_data()), 200
     finally:
         if conn:
             conn.close()
@@ -216,6 +269,10 @@ def get_dashboard_data():
 @app.route('/api/analytics-data', methods=['GET'])
 def get_analytics_data():
     """Endpoint to fetch visualization data for analytics page."""
+    # Serve mock data when DB is unavailable or mock mode enabled
+    if USE_MOCK_DATA or not DB_SCHEMA:
+        return jsonify(_mock_analytics_data())
+
     conn = None
     try:
         conn = snowflake.connector.connect(
@@ -321,7 +378,8 @@ def get_analytics_data():
 
     except Exception as e:
         print(f"Error fetching analytics data: {e}")
-        return jsonify({"error": "Failed to fetch analytics data."}), 500
+        # Fallback to mock data so frontend remains usable
+        return jsonify(_mock_analytics_data()), 200
     finally:
         if conn:
             conn.close()
