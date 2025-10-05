@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "aria-frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/assets/(.*)",
+      "dest": "aria-frontend/dist/assets/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "aria-frontend/dist/index.html"
+    }
+  ]
+}

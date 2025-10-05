@@ -3,8 +3,9 @@ import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-do
 import { Box, AppBar, Toolbar, Button, Typography } from '@mui/material'; // Typography is still needed for other pages
 
 // IMPORT OUR PAGE COMPONENTS
-import Dashboard from './pages/Dashboard';
+import Dashboard from './pages/dashboard';
 import Chatbox from './pages/Chatbox';
+import Analytics from './pages/Analytics';
 
 function App() {
   return (
@@ -23,10 +24,17 @@ function App() {
             </Button>
             <Button
               component={NavLink}
+              to="/analytics"
+              sx={{ color: '#aaa', '&.active': { color: 'white' }, mr: 1 }}
+            >
+              02 analytics
+            </Button>
+            <Button
+              component={NavLink}
               to="/chatbox"
               sx={{ color: '#aaa', '&.active': { color: 'white' } }}
             >
-              02 chatbox
+              03 chatbox
             </Button>
           </Box>
         </Toolbar>
@@ -34,6 +42,7 @@ function App() {
       
       <Routes>
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/analytics" element={<Analytics />} />
         <Route path="/chatbox" element={<Chatbox />} />
         <Route path="/" element={<Dashboard />} /> {/* Default route */}
       </Routes>
