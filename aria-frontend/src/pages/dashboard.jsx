@@ -5,12 +5,25 @@ import axios from 'axios';
 
 // A reusable card for the KPIs
 const KpiCard = ({ title, value }) => (
-  <Card sx={{ backgroundColor: '#1e1e1e', height: '100%', minHeight: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-    <CardContent sx={{ p: 3, textAlign: 'center' }}>
-      <Typography variant="h4" component="p" sx={{ fontWeight: 'bold' }}>
+  <Card sx={{ 
+    backgroundColor: '#1e1e1e', 
+    height: '100%', 
+    minHeight: '160px', 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    border: '1px solid #333',
+    transition: 'transform 0.2s, border-color 0.2s',
+    '&:hover': {
+      transform: 'translateY(-4px)',
+      borderColor: '#8b5cf6'
+    }
+  }}>
+    <CardContent sx={{ p: 4, textAlign: 'center', width: '100%' }}>
+      <Typography variant="h3" component="p" sx={{ fontWeight: 'bold', color: '#fff', mb: 2 }}>
         {value}
       </Typography>
-      <Typography color="text.secondary" sx={{ mt: 1 }}>
+      <Typography sx={{ color: '#aaa', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
         {title}
       </Typography>
     </CardContent>
@@ -64,40 +77,56 @@ function Dashboard() {
   ];
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, textAlign: 'center' }}>
-      {/* Moved and styled the main titles */}
-      <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', mb: 1, mt: 4 }}>
-        ARIA DASHBOARD {/* Changed back to ARIA as per your screenshot */}
-      </Typography>
-      <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 6 }}>
-        Retail Intelligence & Analytics Dashboard - Real-time Insights from your data.
-      </Typography>
+    <Container maxWidth="xl" sx={{ mt: 6, mb: 6 }}>
+      {/* Header */}
+      <Box sx={{ mb: 6, textAlign: 'center' }}>
+        <Typography variant="h3" component="h1" sx={{ fontWeight: 'bold', mb: 2, color: '#fff' }}>
+          ARIA DASHBOARD
+        </Typography>
+        <Typography variant="body1" sx={{ color: '#aaa', fontSize: '1.1rem' }}>
+          Retail Intelligence & Analytics Dashboard - Real-time Insights from your data.
+        </Typography>
+      </Box>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={7}>
-          <Grid container spacing={3}>
+      <Grid container spacing={4}>
+        {/* KPI Cards - Full width on top */}
+        <Grid item xs={12}>
+          <Grid container spacing={4}>
             {kpiData.map((kpi, index) => (
-              <Grid item xs={12} sm={6} key={index}> {/* Changed sm to 6 for 2x2 grid */}
+              <Grid item xs={12} sm={6} md={3} key={index}>
                 <KpiCard title={kpi.title} value={kpi.value} />
               </Grid>
             ))}
           </Grid>
         </Grid>
 
-        <Grid item xs={12} md={5}>
-          <Card sx={{ backgroundColor: '#1e1e1e', textAlign: 'left', p: 1, height: '100%' }}> {/* Ensure card takes full height */}
-            <CardContent>
-              <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
-                Recent Sales Activity
+        {/* Recent Sales Activity - Full width below */}
+        <Grid item xs={12}>
+          <Card sx={{ backgroundColor: '#1e1e1e', border: '1px solid #333' }}>
+            <CardContent sx={{ p: 3 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, color: '#fff' }}>
+                📋 Recent Sales Activity
               </Typography>
-              <List dense>
+              <List>
                 {data.recentSales.map((sale, index) => (
-                  <ListItem key={index} disablePadding sx={{ borderBottom: index !== data.recentSales.length - 1 ? '1px solid #333' : 'none', py: 1.5 }}>
-                    <ListItemIcon sx={{ minWidth: 'auto', mr: 1.5 }}>
-                      <CircleIcon sx={{ color: 'primary.main', fontSize: '0.6rem' }} />
+                  <ListItem 
+                    key={index} 
+                    sx={{ 
+                      borderBottom: index !== data.recentSales.length - 1 ? '1px solid #333' : 'none', 
+                      py: 2,
+                      px: 2,
+                      '&:hover': { backgroundColor: '#252525' }
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 'auto', mr: 2 }}>
+                      <CircleIcon sx={{ color: '#8b5cf6', fontSize: '0.7rem' }} />
                     </ListItemIcon>
-                    {/* Removed time from secondary text */}
-                    <ListItemText primary={sale.text} secondary={sale.value} />
+                    <ListItemText 
+                      primary={sale.text} 
+                      secondary={sale.value}
+                      primaryTypographyProps={{ sx: { color: '#fff', fontSize: '1rem' } }}
+                      secondaryTypographyProps={{ sx: { color: '#10b981', fontWeight: 600, fontSize: '0.95rem' } }}
+                    />
                   </ListItem>
                 ))}
               </List>

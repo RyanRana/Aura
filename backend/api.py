@@ -12,7 +12,7 @@ import pandas as pd
 
 # --- Flask App Initialization ---
 app = Flask(__name__)
-CORS(app) # This enables Cross-Origin Resource Sharing
+CORS(app, resources={r"/api/*": {"origins": "*"}}) # This enables Cross-Origin Resource Sharing
 
 # Define a folder to store temporary uploads
 UPLOAD_FOLDER = 'temp_uploads'
@@ -31,26 +31,38 @@ if not DB_SCHEMA:
 @app.route('/api/chat', methods=['POST'])
 def chat():
     """Endpoint to handle chat interactions with the Aria agent."""
-    data = request.json
-    user_question = data.get('message')
-    chat_history = data.get('history', [])
+    try:
+        data = request.json
+        user_question = data.get('message')
+        chat_history = data.get('history', [])
 
-    if not user_question:
-        return jsonify({"error": "No message provided."}), 400
+        if not user_question:
+            return jsonify({"error": "No message provided."}), 400
 
-    # Use the router to check intent
-    intent = route_user_question(user_question, DB_SCHEMA)
+        # Use the router to check intent
+        intent = route_user_question(user_question, DB_SCHEMA)
+        
+        final_answer = ""
+        if intent == 'data_query':
+            # If it's a data query, run the full agentic flow
+            final_answer = run_agentic_flow(user_question, DB_SCHEMA, chat_history)
+        elif intent == 'greeting':
+            final_answer = "Hello! I'm Aria, your Autonomous Retail Intelligence Agent. How can I help you analyze our data today?"
+        else: # Off-topic or other intents
+            final_answer = "I'm sorry, but I can only answer questions related to our retail data. Please ask something about sales, inventory, or product performance."
+
+        return jsonify({"response": final_answer})
     
-    final_answer = ""
-    if intent == 'data_query':
-        # If it's a data query, run the full agentic flow
-        final_answer = run_agentic_flow(user_question, DB_SCHEMA, chat_history)
-    elif intent == 'greeting':
-        final_answer = "Hello! I'm Aria, your Autonomous Retail Intelligence Agent. How can I help you analyze our data today?"
-    else: # Off-topic or other intents
-        final_answer = "I'm sorry, but I can only answer questions related to our retail data. Please ask something about sales, inventory, or product performance."
-
-    return jsonify({"response": final_answer})
+    except Exception as e:
+        error_message = str(e)
+        # Check if it's a quota error
+        if "ResourceExhausted" in error_message or "quota" in error_message.lower():
+            return jsonify({
+                "error": "API rate limit exceeded. Please wait a moment before trying again. The Gemini API free tier allows 15 requests per minute."
+            }), 429
+        else:
+            print(f"Error in chat endpoint: {e}")
+            return jsonify({"error": f"An error occurred: {error_message}"}), 500
 
 
 @app.route('/api/execute-upload', methods=['POST'])
@@ -171,6 +183,120 @@ def get_dashboard_data():
     finally:
         if conn:
             conn.close()
+
+@app.route('/api/analytics-data', methods=['GET'])
+def get_analytics_data():
+    """Endpoint to fetch visualization data for analytics page."""
+    conn = None
+    try:
+        conn = snowflake.connector.connect(
+            user=os.getenv("SNOWFLAKE_USER"),
+            password=os.getenv("SNOWFLAKE_PASSWORD"),
+            account=os.getenv("SNOWFLAKE_ACCOUNT"),
+            warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
+            database=os.getenv("SNOWFLAKE_DATABASE"),
+            schema=os.getenv("SNOWFLAKE_SCHEMA")
+        )
+        cur = conn.cursor()
+
+        # Query 1: Sales Trend (Last 30 Days)
+        cur.execute("""
+            SELECT 
+                TO_CHAR(D.D_DATE, 'MM-DD') as date,
+                SUM(F.NET_SALES) as sales
+            FROM FACT_SALES_DAILY F
+            JOIN DIM_DATE D ON F.DATE_KEY = D.DATE_KEY
+            WHERE D.D_DATE >= DATEADD(day, -30, CURRENT_DATE())
+            GROUP BY D.D_DATE
+            ORDER BY D.D_DATE;
+        """)
+        sales_trend = [{"date": row[0], "sales": float(row[1]) if row[1] else 0} for row in cur.fetchall()]
+
+        # Query 2: Top Products by Revenue
+        cur.execute("""
+            SELECT 
+                P.PRODUCT_NAME as name,
+                SUM(F.NET_SALES) as value
+            FROM FACT_SALES_DAILY F
+            JOIN DIM_PRODUCT P ON F.PRODUCT_KEY = P.PRODUCT_KEY
+            GROUP BY P.PRODUCT_NAME
+            ORDER BY value DESC
+            LIMIT 5;
+        """)
+        top_products = [{"name": row[0], "value": float(row[1]) if row[1] else 0} for row in cur.fetchall()]
+
+        # Query 3: Store Performance
+        cur.execute("""
+            SELECT 
+                S.STORE_NAME as store,
+                SUM(F.NET_SALES) as revenue
+            FROM FACT_SALES_DAILY F
+            JOIN DIM_STORE S ON F.STORE_KEY = S.STORE_KEY
+            GROUP BY S.STORE_NAME
+            ORDER BY revenue DESC
+            LIMIT 10;
+        """)
+        store_performance = [{"store": row[0], "revenue": float(row[1]) if row[1] else 0} for row in cur.fetchall()]
+
+        # Query 4: Daily Sales Volume (Last 30 Days) - Using as alternative to spoilage
+        cur.execute("""
+            SELECT 
+                TO_CHAR(D.D_DATE, 'MM-DD') as date,
+                SUM(F.QTY_SOLD) as quantity,
+                SUM(F.NET_SALES) as value
+            FROM FACT_SALES_DAILY F
+            JOIN DIM_DATE D ON F.DATE_KEY = D.DATE_KEY
+            WHERE D.D_DATE >= DATEADD(day, -30, CURRENT_DATE())
+            GROUP BY D.D_DATE
+            ORDER BY D.D_DATE;
+        """)
+        spoilage_data = [{"date": row[0], "quantity": float(row[1]) if row[1] else 0, "value": float(row[2]) if row[2] else 0} for row in cur.fetchall()]
+
+        # Query 5: Category Sales Comparison (Top Products as Categories)
+        cur.execute("""
+            SELECT 
+                P.PRODUCT_NAME as category,
+                SUM(F.NET_SALES) as sales
+            FROM FACT_SALES_DAILY F
+            JOIN DIM_PRODUCT P ON F.PRODUCT_KEY = P.PRODUCT_KEY
+            GROUP BY P.PRODUCT_NAME
+            ORDER BY sales DESC
+            LIMIT 8;
+        """)
+        category_comparison = [{"category": row[0] if row[0] else "Unknown", "sales": float(row[1]) if row[1] else 0} for row in cur.fetchall()]
+
+        # Query 6: Promotion Effectiveness (Promo vs No Promo by Store)
+        cur.execute("""
+            SELECT 
+                S.STORE_NAME as promotion,
+                SUM(CASE WHEN F.PROMO_KEY > 0 THEN F.NET_SALES ELSE 0 END) as withPromo,
+                SUM(CASE WHEN F.PROMO_KEY = 0 OR F.PROMO_KEY IS NULL THEN F.NET_SALES ELSE 0 END) as withoutPromo
+            FROM FACT_SALES_DAILY F
+            JOIN DIM_STORE S ON F.STORE_KEY = S.STORE_KEY
+            GROUP BY S.STORE_NAME
+            ORDER BY withPromo DESC
+            LIMIT 5;
+        """)
+        promotion_effectiveness = [{"promotion": row[0], "withPromo": float(row[1]) if row[1] else 0, "withoutPromo": float(row[2]) if row[2] else 0} for row in cur.fetchall()]
+
+        analytics_data = {
+            "salesTrend": sales_trend,
+            "topProducts": top_products,
+            "storePerformance": store_performance,
+            "spoilageData": spoilage_data,
+            "categoryComparison": category_comparison,
+            "promotionEffectiveness": promotion_effectiveness
+        }
+        
+        return jsonify(analytics_data)
+
+    except Exception as e:
+        print(f"Error fetching analytics data: {e}")
+        return jsonify({"error": "Failed to fetch analytics data."}), 500
+    finally:
+        if conn:
+            conn.close()
+
 # --- Main Execution ---
 if __name__ == '__main__':
     # Runs the Flask app on localhost, port 5001
