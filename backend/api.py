@@ -324,5 +324,10 @@ def get_analytics_data():
 
 # --- Main Execution ---
 if __name__ == '__main__':
-    # Runs the Flask app on localhost, port 5001
-    app.run(debug=True, port=5001)
+    # Get port from environment variable (Render provides this)
+    # Default to 5001 for local development
+    port = int(os.environ.get('PORT', 5001))
+    
+    # Bind to 0.0.0.0 so Render can access it
+    # Use debug=False for production
+    app.run(host='0.0.0.0', port=port, debug=False)
