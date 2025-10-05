@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import google.generativeai as genai
 import snowflake.connector
 from dotenv import load_dotenv
@@ -133,8 +134,11 @@ def route_user_question(user_question: str, db_schema: str):
     **Instructions:**
     Analyze the user's question and classify it into one of the following categories:
     1. `greeting`: The user is saying hello, thank you, or other conversational pleasantries.
-    2. `data_query`: The user is asking a question that can be answered using the provided database schema (e.g., questions about sales, products, inventory, spoilage).
-    3. `off_topic`: The user is asking a question that is not a greeting and cannot be answered by the database schema (e.g., "what is the capital of France?", "tell me a joke").
+    2. `data_query`: The user is asking a question that can DEFINITELY be answered using the provided database schema (e.g., questions about sales, products, inventory, spoilage, revenue, transactions).
+    3. `off_topic`: The user is asking a question that is not a greeting and cannot be answered by the database schema (e.g., "what is the capital of France?", "tell me a joke", "what's the weather?", "how do I cook pasta?").
+    4. `unanswerable`: The user is asking a question that seems related to retail/business but cannot be answered with the available data schema (e.g., questions about competitors, market trends, external data, future predictions, or data not in the schema).
+
+    **IMPORTANT:** Be conservative. If you're unsure whether the question can be answered with the schema, classify it as `unanswerable` rather than `data_query`.
 
     Your response MUST be a JSON object with a single key "intent".
 
@@ -149,8 +153,8 @@ def route_user_question(user_question: str, db_schema: str):
         print(f"Detected Intent: {intent}")
         return intent
     except Exception as e:
-        print(f"Error routing intent: {e}. Defaulting to 'data_query'.")
-        return "data_query"
+        print(f"Error routing intent: {e}. Defaulting to 'unanswerable'.")
+        return "unanswerable"
 
 # --- The Main Agent "Brain" ---
 
@@ -159,6 +163,8 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
     The main agentic loop that thinks, acts, and synthesizes an answer.
     """
     print("\n[Aria's Brain] Starting new investigation...")
+    start_time = time.time()
+    MAX_EXECUTION_TIME = 30  # 30 seconds timeout
     
     print("[Aria's Brain] Step 1: Formulating an analysis plan...")
     
@@ -188,6 +194,9 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
     
     observations = ""
     sub_questions = []
+    failed_queries = 0
+    max_failed_queries = 3  # Stop if too many queries fail
+    
     for line in analysis_plan.strip().split('\n'):
         line = line.strip()
         parts = line.split('.', 1)
@@ -195,10 +204,32 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
             sub_questions.append(parts[1].strip())
     
     for i, sub_q in enumerate(sub_questions, 1):
+        # Check timeout
+        if time.time() - start_time > MAX_EXECUTION_TIME:
+            print(f"[Aria's Brain] Timeout reached ({MAX_EXECUTION_TIME}s). Stopping execution.")
+            break
+            
+        # Check if too many queries have failed
+        if failed_queries >= max_failed_queries:
+            print(f"[Aria's Brain] Too many failed queries ({failed_queries}). Stopping execution.")
+            break
+            
         observation = text_to_sql_tool(sub_q, db_schema, chat_history)
+        
+        # Check if query failed
+        if "Error:" in observation or "Query returned no results." in observation:
+            failed_queries += 1
+            print(f"[Aria's Brain] Query {i} failed. Failed count: {failed_queries}")
+        else:
+            failed_queries = 0  # Reset counter on successful query
+            
         observations += f"Observation {i} (from question '{sub_q}'):\n{observation}\n\n"
         
     print(f"--- All Data Gathered ---\n{observations}")
+
+    # Check if we have any meaningful data
+    if not observations.strip() or failed_queries >= max_failed_queries:
+        return "I apologize, but I'm unable to find relevant data to answer your question. The question may be outside the scope of our available data, or there might be an issue with the data connection. Please try rephrasing your question or ask about sales, inventory, or product data that should be available in our system."
 
     print("[Aria's Brain] Step 3: Synthesizing final answer...")
     
@@ -250,6 +281,8 @@ def main():
             final_answer = "Hello! I'm Aria, your Autonomous Retail Intelligence Agent. How can I help you analyze our data today?"
         elif intent == 'off_topic':
             final_answer = "I'm sorry, but I can only answer questions related to our retail data in Snowflake, such as sales, inventory, and product performance."
+        elif intent == 'unanswerable':
+            final_answer = "I understand you're asking about business/retail topics, but I don't have the necessary data in our system to answer that question. I can help you with questions about sales, inventory, product performance, and other data that's available in our Snowflake database. Could you try rephrasing your question to focus on data we have available?"
         else:
             final_answer = "I'm not sure how to handle that request. Please try asking a question related to our retail data."
 

@@ -47,8 +47,12 @@ def chat():
         final_answer = run_agentic_flow(user_question, DB_SCHEMA, chat_history)
     elif intent == 'greeting':
         final_answer = "Hello! I'm Aria, your Autonomous Retail Intelligence Agent. How can I help you analyze our data today?"
-    else: # Off-topic or other intents
+    elif intent == 'off_topic':
         final_answer = "I'm sorry, but I can only answer questions related to our retail data. Please ask something about sales, inventory, or product performance."
+    elif intent == 'unanswerable':
+        final_answer = "I understand you're asking about business/retail topics, but I don't have the necessary data in our system to answer that question. I can help you with questions about sales, inventory, product performance, and other data that's available in our Snowflake database. Could you try rephrasing your question to focus on data we have available?"
+    else:
+        final_answer = "I'm not sure how to handle that request. Please try asking a question related to our retail data."
 
     return jsonify({"response": final_answer})
 
