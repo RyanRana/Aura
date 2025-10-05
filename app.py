@@ -194,8 +194,9 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
         
     print(f"--- All Data Gathered ---\n{observations}")
 
-    print("[Aria's Brain] Step 3: Synthesizing final recommendation...")
+    print("[Aria's Brain] Step 3: Synthesizing final answer...")
     
+    # --- MODIFIED PROMPT: Removed the next steps section ---
     synthesis_prompt = f"""
     You are Aria, an Autonomous Retail Intelligence Agent. You have completed your investigation into the manager's question: "{user_question}"
     
@@ -207,7 +208,6 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
     Based on all of these observations, provide a final, comprehensive answer.
     Start with a direct answer to the question.
     Then, provide a brief summary of the key findings from your investigation.
-    Finally, if applicable, suggest a recommended next step or action for the manager.
     Your tone should be professional, data-driven, and helpful.
     """
     
@@ -234,7 +234,6 @@ def main():
         if not user_question:
             continue
             
-        # --- MODIFIED LOGIC: Route the question first ---
         intent = route_user_question(user_question, db_schema)
         
         final_answer = ""
