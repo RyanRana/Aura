@@ -137,14 +137,14 @@ def route_user_question(user_question: str, db_schema: str):
     """
     Classifies the user's question to determine the correct action (intent).
     """
-    print("\n[Aria's Router] Classifying user intent...")
+    print("\n[Aura's Router] Classifying user intent...")
     
     genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
     model = genai.GenerativeModel('gemini-2.5-flash-lite')
     
     router_prompt = f"""
     You are an intent classification agent. Your job is to determine the user's intent.
-    The user is talking to Aria, an Autonomous Retail Intelligence Agent that answers questions by querying a Snowflake database.
+    The user is talking to Aura, an Autonomous Retail Intelligence Agent that answers questions by querying a Snowflake database.
 
     **Database Schema Context:**
     ---
@@ -189,16 +189,16 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
     """
     The main agentic loop that thinks, acts, and synthesizes an answer.
     """
-    print("\n[Aria's Brain] Starting new investigation...")
+    print("\n[Aura's Brain] Starting new investigation...")
     start_time = time.time()
     MAX_EXECUTION_TIME = 60  # 60 seconds timeout
     
-    print("[Aria's Brain] Step 1: Formulating an analysis plan...")
+    print("[Aura's Brain] Step 1: Formulating an analysis plan...")
     
     formatted_history = format_chat_history(chat_history)
     
     plan_prompt = f"""
-    You are Aria, an Autonomous Retail Intelligence Agent. Your goal is to perform a comprehensive analysis.
+    You are Aura, an Autonomous Retail Intelligence Agent. Your goal is to perform a comprehensive analysis.
     A manager has asked: "{user_question}"
     
     **CONTEXT AWARENESS:**
@@ -239,7 +239,7 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
     analysis_plan = plan_response.text
     print(f"Analysis Plan:\n{analysis_plan}")
     
-    print("\n[Aria's Brain] Step 2: Executing plan and gathering data...")
+    print("\n[Aura's Brain] Step 2: Executing plan and gathering data...")
     
     observations = ""
     sub_questions = []
@@ -255,12 +255,12 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
     for i, sub_q in enumerate(sub_questions, 1):
         # Check timeout
         if time.time() - start_time > MAX_EXECUTION_TIME:
-            print(f"[Aria's Brain] Timeout reached ({MAX_EXECUTION_TIME}s). Stopping execution.")
+            print(f"[Aura's Brain] Timeout reached ({MAX_EXECUTION_TIME}s). Stopping execution.")
             break
             
         # Check if too many queries have failed
         if failed_queries >= max_failed_queries:
-            print(f"[Aria's Brain] Too many failed queries ({failed_queries}). Stopping execution.")
+            print(f"[Aura's Brain] Too many failed queries ({failed_queries}). Stopping execution.")
             break
             
         observation = text_to_sql_tool(sub_q, db_schema, chat_history)
@@ -268,10 +268,10 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
         # Check if query failed (be more lenient with "no results")
         if "Error:" in observation:
             failed_queries += 1
-            print(f"[Aria's Brain] Query {i} failed with error. Failed count: {failed_queries}")
+            print(f"[Aura's Brain] Query {i} failed with error. Failed count: {failed_queries}")
         elif "Query returned no results." in observation:
             # Don't count "no results" as a failure - it might be expected for some queries
-            print(f"[Aria's Brain] Query {i} returned no results (not counted as failure)")
+            print(f"[Aura's Brain] Query {i} returned no results (not counted as failure)")
         else:
             failed_queries = 0  # Reset counter on successful query
             
@@ -284,13 +284,13 @@ def run_agentic_flow(user_question: str, db_schema: str, chat_history: list):
         return "I apologize, but I'm unable to find relevant data to answer your question. The question may be outside the scope of our available data, or there might be an issue with the data connection. Please try rephrasing your question or ask about sales, inventory, or product data that should be available in our system."
     elif failed_queries >= max_failed_queries:
         # Even if some queries failed, try to synthesize what we have
-        print(f"[Aria's Brain] Some queries failed ({failed_queries}), but proceeding with available data...")
+        print(f"[Aura's Brain] Some queries failed ({failed_queries}), but proceeding with available data...")
 
-    print("[Aria's Brain] Step 3: Synthesizing final answer...")
+    print("[Aura's Brain] Step 3: Synthesizing final answer...")
     
     # --- MODIFIED PROMPT: User-friendly, concise responses with context ---
     synthesis_prompt = f"""
-    You are Aria, an Autonomous Retail Intelligence Agent. You have completed your investigation into the manager's question: "{user_question}"
+    You are Aura, an Autonomous Retail Intelligence Agent. You have completed your investigation into the manager's question: "{user_question}"
     
     **CONVERSATION CONTEXT:**
     Consider the conversation history to provide contextually appropriate responses:
@@ -336,14 +336,14 @@ def main():
     if not db_schema:
         print("Fatal: Could not retrieve database schema. Exiting.")
         return
-    print("Schema loaded. Aria is ready.\n")
+    print("Schema loaded. Aura is ready.\n")
     
     chat_history = []
 
     while True:
-        user_question = input("Ask Aria a question (or type 'exit' to quit): ")
+        user_question = input("Ask Aura a question (or type 'exit' to quit): ")
         if user_question.lower() in ['exit', 'quit']:
-            print("Shutting down Aria. Goodbye!")
+            print("Shutting down Aura. Goodbye!")
             break
         if not user_question:
             continue
@@ -355,7 +355,7 @@ def main():
         if intent == 'data_query':
             final_answer = run_agentic_flow(user_question, db_schema, chat_history)
         elif intent == 'greeting':
-            final_answer = "Hello! I'm Aria, your Autonomous Retail Intelligence Agent. How can I help you analyze our data today?"
+            final_answer = "Hello! I'm Aura, your Autonomous Retail Intelligence Agent. How can I help you analyze our data today?"
         elif intent == 'off_topic':
             final_answer = "I'm sorry, but I can only answer questions related to our retail data in Snowflake, such as sales, inventory, and product performance."
         elif intent == 'unanswerable':
@@ -363,7 +363,7 @@ def main():
         else:
             final_answer = "I'm not sure how to handle that request. Please try asking a question related to our retail data."
 
-        print("\n💡 Aria's Final Answer:")
+        print("\n💡 Aura's Final Answer:")
         print(final_answer)
         print("-" * 20 + "\n")
         
