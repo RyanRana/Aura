@@ -22,14 +22,5 @@
       "src": "/(.*)",
       "dest": "aria-frontend/$1"
     }
-  ],
-  "env": {
-    "SNOWFLAKE_USER": "@snowflake_user",
-    "SNOWFLAKE_PASSWORD": "@snowflake_password",
-    "SNOWFLAKE_ACCOUNT": "@snowflake_account",
-    "SNOWFLAKE_WAREHOUSE": "@snowflake_warehouse",
-    "SNOWFLAKE_DATABASE": "@snowflake_database",
-    "SNOWFLAKE_SCHEMA": "@snowflake_schema",
-    "GOOGLE_API_KEY": "@google_api_key"
-  }
+  ]
 }
