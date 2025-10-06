@@ -74,11 +74,18 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# --- Load Schema Once on Startup ---
+# --- Load Schema Once on Startup (with error handling) ---
 print("Loading database schema for the API...")
-DB_SCHEMA = get_schema_for_agent()
-if not DB_SCHEMA:
-    print("FATAL: Could not load database schema. The API may not function correctly.")
+DB_SCHEMA = None
+try:
+    DB_SCHEMA = get_schema_for_agent()
+    if DB_SCHEMA:
+        print("✅ Database schema loaded successfully.")
+    else:
+        print("⚠️  Could not load database schema. Using mock data mode.")
+except Exception as e:
+    print(f"⚠️  Error loading database schema: {e}. Using mock data mode.")
+    DB_SCHEMA = None
 
 # --- Error Handlers to ensure CORS works even with errors ---
 @app.after_request
@@ -386,10 +393,8 @@ def get_analytics_data():
 
 # --- Main Execution ---
 if __name__ == '__main__':
-    # Get port from environment variable (Render provides this)
-    # Default to 5001 for local development
+    # This block is only used for local development
+    # In production, gunicorn serves the app directly
     port = int(os.environ.get('PORT', 5001))
-    
-    # Bind to 0.0.0.0 so Render can access it
-    # Use debug=False for production
-    app.run(host='0.0.0.0', port=port, debug=False)
+    print(f"🚀 Starting Flask development server on port {port}...")
+    app.run(host='0.0.0.0', port=port, debug=True)
