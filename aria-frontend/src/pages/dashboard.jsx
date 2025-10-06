@@ -37,6 +37,9 @@ function Dashboard() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Set page title
+    document.title = 'Aura - Dashboard';
+    
     const fetchData = async () => {
       try {
         setLoading(true);

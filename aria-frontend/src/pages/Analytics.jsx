@@ -13,6 +13,9 @@ function Analytics() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Set page title
+    document.title = 'Aura - Analytics';
+    
     const fetchData = async () => {
       try {
         setLoading(true);

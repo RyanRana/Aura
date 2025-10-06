@@ -14,6 +14,11 @@ function Chatbox() {
   const [isLoading, setIsLoading] = useState(false);
   const chatEndRef = useRef(null);
 
+  // Set page title
+  useEffect(() => {
+    document.title = 'Aura - Chatbox';
+  }, []);
+
   const scrollToBottom = () => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
   useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
 
